@@ -2607,7 +2607,8 @@ starPicker.querySelectorAll('.star').forEach(star => {
 
 async function loadReviews(){
   try{
-    const { data, error } = await sb.from('reviews').select('*').order('created_at', { ascending:false }).limit(20);
+    const tout = new URLSearchParams(location.search).get('avis') === 'tout';
+    const { data, error } = await sb.from('reviews').select('*').order('created_at', { ascending:false }).limit(tout ? 500 : 100);
     if(error || !data){ reviewsSummary.textContent = "Sois la première personne à donner ton avis."; return; }
     if(data.length === 0){
       reviewsSummary.textContent = "Sois la première personne à donner ton avis.";
@@ -2616,7 +2617,16 @@ async function loadReviews(){
     const avg = (data.reduce((s,r)=>s+r.rating,0)/data.length).toFixed(1);
     reviewsSummary.innerHTML = `<b>${avg}/5</b> — ${data.length} avis`;
     reviewList.innerHTML = '';
-    data.filter(r => r.comment && r.comment.trim()).slice(0,6).forEach(r => {
+    const avecTexte = data.filter(r => r.comment && r.comment.trim());
+    const visibles = tout ? avecTexte : avecTexte.slice(0, 6);
+    if(tout){
+      const entete = document.createElement('div');
+      entete.className = 'reviews-summary';
+      entete.style.marginBottom = '14px';
+      entete.innerHTML = `<b>Vue complète</b> — ${data.length} avis au total, dont ${avecTexte.length} avec commentaire.`;
+      reviewList.appendChild(entete);
+    }
+    visibles.forEach(r => {
       const div = document.createElement('div');
       div.className = 'review-card';
       const stars = '★'.repeat(r.rating) + '☆'.repeat(5-r.rating);
@@ -2624,9 +2634,30 @@ async function loadReviews(){
       div.innerHTML = `
         <div class="review-stars">${stars}</div>
         <div class="review-text">${esc(r.comment)}</div>
-        <div class="review-meta">${esc(who)}</div>`;
+        <div class="review-meta">${esc(who)}${tout && r.created_at ? ' · ' + new Date(r.created_at).toLocaleDateString('fr-BE') : ''}</div>`;
       reviewList.appendChild(div);
     });
+    if(!tout && avecTexte.length > 6){
+      const plus = document.createElement('button');
+      plus.className = 'link-btn';
+      plus.style.marginTop = '12px';
+      plus.textContent = `Voir les ${avecTexte.length} avis`;
+      plus.onclick = () => {
+        avecTexte.slice(6).forEach(r => {
+          const div = document.createElement('div');
+          div.className = 'review-card';
+          const stars = '★'.repeat(r.rating) + '☆'.repeat(5-r.rating);
+          const who = r.display_name && r.display_name.trim() ? r.display_name : 'Anonyme';
+          div.innerHTML = `
+            <div class="review-stars">${stars}</div>
+            <div class="review-text">${esc(r.comment)}</div>
+            <div class="review-meta">${esc(who)}</div>`;
+          reviewList.insertBefore(div, plus);
+        });
+        plus.remove();
+      };
+      reviewList.appendChild(plus);
+    }
   }catch(e){
     reviewsSummary.textContent = "Sois la première personne à donner ton avis.";
   }

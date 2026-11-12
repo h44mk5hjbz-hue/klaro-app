@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Klaro — espace privé</title>
+<meta name="theme-color" content="#15171C">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--bg:#15171C;--surface:#1E2129;--surface2:#272B34;--text:#F3F4F6;--dim:#9CA3AF;
+        --line:rgba(255,255,255,.10);--accent:#60A5FA;--good:#4ADE80;--mid:#FBBF24;--bad:#F87171}
+  body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;padding:22px 16px 90px;line-height:1.6}
+  .wrap{max-width:680px;margin:0 auto}
+  .logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.6rem}
+  .logo span{color:var(--accent)}
+  .sub{color:var(--dim);font-size:.88rem;margin-bottom:22px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px}
+  label{display:block;font-size:.82rem;font-weight:600;color:var(--dim);margin:10px 0 5px}
+  input{width:100%;padding:13px;border:1px solid var(--line);border-radius:11px;background:var(--surface2);
+        color:var(--text);font-family:inherit;font-size:.95rem}
+  button{font-family:inherit;font-weight:600;cursor:pointer;border-radius:11px;border:1px solid var(--line);
+         background:var(--surface2);color:var(--text);padding:12px 15px;font-size:.9rem}
+  button.primary{background:var(--accent);color:#0B1220;border-color:var(--accent)}
+  button.wide{width:100%;margin-top:14px}
+  .tabs{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px}
+  .tab{flex:0 0 auto;border-radius:20px;padding:9px 15px;font-size:.86rem;white-space:nowrap}
+  .tab.on{background:var(--accent);color:#0B1220;border-color:var(--accent)}
+  .item{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:11px}
+  .item.new{border-left:3px solid var(--accent)}
+  .head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin-bottom:5px}
+  .who{font-weight:600;font-size:.97rem}
+  .when{font-size:.75rem;color:var(--dim);white-space:nowrap}
+  .mail{font-size:.82rem;color:var(--accent);text-decoration:none;word-break:break-all}
+  .msg{font-size:.92rem;color:#D7DAE0;margin:9px 0 12px;white-space:pre-wrap}
+  .acts{display:flex;gap:8px;flex-wrap:wrap}
+  .acts button,.acts a{font-size:.82rem;padding:9px 13px;border-radius:9px;text-decoration:none;
+        border:1px solid var(--line);background:var(--surface2);color:var(--text);display:inline-block}
+  .empty{color:var(--dim);font-size:.9rem;text-align:center;padding:26px 0}
+  .err{color:var(--bad);font-size:.86rem;margin-top:10px}
+  .ok{color:var(--good);font-size:.86rem;margin-top:10px}
+  .badge{display:inline-block;background:var(--accent);color:#0B1220;border-radius:11px;padding:1px 8px;
+         font-size:.72rem;font-weight:700;margin-left:6px}
+  .stars{color:var(--mid);font-size:.95rem}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  .mini{font-size:.78rem;color:var(--dim)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="loginView">
+    <div class="logo">Klaro<span>.</span> <span style="font-weight:500;font-size:1rem;color:var(--dim)">espace privé</span></div>
+    <p class="sub">Réservé à l'administration de Klaro.</p>
+    <div class="card">
+      <label for="email">Email</label>
+      <input type="email" id="email" autocomplete="username" placeholder="ton@email.com">
+      <label for="pwd">Mot de passe</label>
+      <input type="password" id="pwd" autocomplete="current-password" placeholder="••••••••">
+      <button class="primary wide" id="loginBtn">Se connecter</button>
+      <p class="err" id="loginErr"></p>
+    </div>
+    <p class="mini">Sans identifiants, cette page n'affiche aucune donnée.</p>
+  </div>
+
+  <div id="appView" style="display:none">
+    <div class="top">
+      <div>
+        <div class="logo">Klaro<span>.</span></div>
+        <div class="mini" id="whoami"></div>
+      </div>
+      <button id="logoutBtn">Déconnexion</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab on" data-v="messages">Messages<span class="badge" id="bMsg">0</span></button>
+      <button class="tab" data-v="avis">Avis<span class="badge" id="bAvis">0</span></button>
+      <button class="tab" data-v="produits">Produits ajoutés<span class="badge" id="bProd">0</span></button>
+    </div>
+
+    <div id="list"></div>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = 'https://bnlswbbavvqyybpcgwtx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Ks-H1vDGAMShOPqUCz77MQ_l5K6bapd';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const $ = id => document.getElementById(id);
+const esc = v => String(v == null ? '' : v)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const quand = d => d ? new Date(d).toLocaleString('fr-BE', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+
+let vue = 'messages';
+let cache = { messages:[], avis:[], produits:[] };
+
+// ---------- connexion ----------
+$('loginBtn').onclick = async () => {
+  const btn = $('loginBtn'); const err = $('loginErr');
+  err.textContent = ''; btn.disabled = true; btn.textContent = 'Connexion…';
+  const { error } = await sb.auth.signInWithPassword({
+    email: $('email').value.trim(),
+    password: $('pwd').value
+  });
+  btn.disabled = false; btn.textContent = 'Se connecter';
+  if(error){ err.textContent = "Identifiants incorrects."; return; }
+  demarrer();
+};
+$('pwd').addEventListener('keydown', e => { if(e.key === 'Enter') $('loginBtn').click(); });
+
+$('logoutBtn').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+async function demarrer(){
+  const { data:{ user } } = await sb.auth.getUser();
+  if(!user) return;
+  $('loginView').style.display = 'none';
+  $('appView').style.display = 'block';
+  $('whoami').textContent = user.email;
+  await charger();
+}
+
+// ---------- chargement ----------
+async function charger(){
+  const [m, a, p] = await Promise.all([
+    sb.from('messages').select('*').order('created_at', { ascending:false }).limit(300),
+    sb.from('reviews').select('*').order('created_at', { ascending:false }).limit(300),
+    sb.from('contributed_products').select('*').order('created_at', { ascending:false }).limit(300)
+  ]);
+  cache.messages = m.data || [];
+  cache.avis     = a.data || [];
+  cache.produits = p.data || [];
+  $('bMsg').textContent  = cache.messages.filter(x => !x.handled).length;
+  $('bAvis').textContent = cache.avis.length;
+  $('bProd').textContent = cache.produits.length;
+  if(m.error) console.warn('messages :', m.error.message);
+  afficher();
+}
+
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    vue = t.dataset.v;
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t));
+    afficher();
+  };
+});
+
+function afficher(){
+  const l = $('list');
+  if(vue === 'messages') return afficherMessages(l);
+  if(vue === 'avis') return afficherAvis(l);
+  return afficherProduits(l);
+}
+
+function afficherMessages(l){
+  if(!cache.messages.length){ l.innerHTML = '<div class="empty">Aucun message pour le moment.</div>'; return; }
+  l.innerHTML = cache.messages.map((m, i) => `
+    <div class="item${m.handled ? '' : ' new'}">
+      <div class="head">
+        <span class="who">${esc(m.first_name || '')} ${esc(m.last_name || '')}</span>
+        <span class="when">${quand(m.created_at)}</span>
+      </div>
+      <a class="mail" href="mailto:${esc(m.email)}?subject=${encodeURIComponent('Ta question sur Klaro')}">${esc(m.email)}</a>
+      <div class="msg">${esc(m.message)}</div>
+      <div class="acts">
+        <a href="mailto:${esc(m.email)}?subject=${encodeURIComponent('Ta question sur Klaro')}&body=${encodeURIComponent('Bonjour ' + (m.first_name || '') + ',\n\n')}">Répondre</a>
+        ${m.handled
+          ? `<button data-h="${i}" data-val="0">Marquer non traité</button>`
+          : `<button data-h="${i}" data-val="1">Marquer traité</button>`}
+      </div>
+    </div>`).join('');
+  l.querySelectorAll('[data-h]').forEach(b => {
+    b.onclick = async () => {
+      const m = cache.messages[parseInt(b.dataset.h, 10)];
+      const val = b.dataset.val === '1';
+      b.disabled = true; b.textContent = '…';
+      const { error } = await sb.from('messages').update({ handled: val }).eq('id', m.id);
+      if(error){ b.textContent = 'Échec'; return; }
+      m.handled = val;
+      $('bMsg').textContent = cache.messages.filter(x => !x.handled).length;
+      afficher();
+    };
+  });
+}
+
+function afficherAvis(l){
+  if(!cache.avis.length){ l.innerHTML = '<div class="empty">Aucun avis pour le moment.</div>'; return; }
+  const moy = (cache.avis.reduce((s,r) => s + (r.rating||0), 0) / cache.avis.length).toFixed(1);
+  l.innerHTML = `<div class="card"><b>${moy}/5</b> — ${cache.avis.length} avis</div>` +
+    cache.avis.map(r => `
+    <div class="item">
+      <div class="head">
+        <span class="stars">${'★'.repeat(r.rating||0)}${'☆'.repeat(5-(r.rating||0))}</span>
+        <span class="when">${quand(r.created_at)}</span>
+      </div>
+      ${r.comment ? `<div class="msg">${esc(r.comment)}</div>` : '<div class="mini">Sans commentaire</div>'}
+      <div class="mini">${esc(r.display_name || 'Anonyme')}</div>
+    </div>`).join('');
+}
+
+function afficherProduits(l){
+  if(!cache.produits.length){ l.innerHTML = '<div class="empty">Aucun produit ajouté pour le moment.</div>'; return; }
+  l.innerHTML = cache.produits.map((p, i) => `
+    <div class="item">
+      <div class="head">
+        <span class="who">${esc(p.product_name || 'Sans nom')}</span>
+        <span class="when">${quand(p.created_at)}</span>
+      </div>
+      <div class="mini">${esc(p.brand || '')} ${p.barcode ? '· ' + esc(p.barcode) : ''} · ${esc(p.category || '')}</div>
+      <div class="msg">${esc((p.ingredients_text || '').slice(0, 220))}${(p.ingredients_text||'').length > 220 ? '…' : ''}</div>
+      <div class="acts"><button data-del="${i}">Supprimer</button></div>
+    </div>`).join('');
+  l.querySelectorAll('[data-del]').forEach(b => {
+    b.onclick = async () => {
+      const p = cache.produits[parseInt(b.dataset.del, 10)];
+      if(!confirm('Supprimer « ' + (p.product_name || 'ce produit') + ' » ?')) return;
+      b.disabled = true; b.textContent = '…';
+      const { error } = await sb.from('contributed_products').delete().eq('id', p.id);
+      if(error){ b.textContent = 'Échec'; return; }
+      cache.produits = cache.produits.filter(x => x.id !== p.id);
+      $('bProd').textContent = cache.produits.length;
+      afficher();
+    };
+  });
+}
+
+// session déjà ouverte ?
+sb.auth.getSession().then(({ data }) => { if(data.session) demarrer(); });
+</script>
+</body>
+</html>
