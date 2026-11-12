@@ -1,31 +1,20 @@
 {
-  "name": "Klaro",
+  "id": "/",
+  "name": "Klaro — décrypte l'étiquette",
   "short_name": "Klaro",
-  "description": "Décrypte l'étiquette. Comprends le produit.",
-  "start_url": "./index.html",
-  "scope": "./",
+  "description": "Scanne un produit alimentaire, cosmétique ou ménager et comprends sa composition : quels ingrédients sont bénéfiques, lesquels sont à surveiller, et pourquoi.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#F7F8FA",
   "theme_color": "#F7F8FA",
   "orientation": "portrait",
+  "categories": ["health", "lifestyle", "shopping"],
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
